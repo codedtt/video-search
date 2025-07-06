@@ -1,21 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import axios from "axios";
 import "./App.css";
 
 function App() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
+  const videoRef = useRef(null);
 
   const handleSearch = async () => {
     if (!query) return;
     try {
       const res = await axios.get("http://localhost:8000/search", {
-        params: { q: query, top_k: 3 },
+        params: { q: query, top_k: 1 },
       });
-      setResults(res.data);
+      setResults(res.data instanceof Array ? res.data : [res.data]);
     } catch (err) {
       console.error(err);
       alert("Search failed. Is FastAPI running?");
+    }
+  };
+
+  const handlePlay = (timestamp) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = timestamp;
+      videoRef.current.play();
     }
   };
 
@@ -31,15 +39,18 @@ function App() {
       />
       <button onClick={handleSearch}>Search</button>
 
-      <div style={{ marginTop: "30px" }}>
-        {results.map((res, idx) => (
-          <div key={idx} style={{ marginBottom: "20px", textAlign: "left" }}>
-            <strong>🎥 {res.video_id}</strong><br />
-            ⏱️ {res.timestamp}s<br />
-            🧠 {res.text}
+      {results.length > 0 && (
+        <>
+          <div style={{ marginTop: "20px", textAlign: "left" }}>
+            <strong>🎥 {results[0].video_id}</strong><br />
+            ⏱️ Timestamp: {results[0].timestamp}s<br />
+            🧠 Text: {results[0].text}<br />
+            <button onClick={() => handlePlay(results[0].timestamp)} style={{ marginTop: "10px" }}>
+              ▶️ Jump to Timestamp
+            </button>
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </div>
   );
 }
